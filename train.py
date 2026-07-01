@@ -70,7 +70,7 @@ torch.set_float32_matmul_precision("high")
 EMB_DIM = 512
 HIDDEN_DIM = 512
 BATCH_SIZE = 256
-LR = 5e-4
+LR = 1e-3
 MASK_RATIO = 0.3
 
 
@@ -135,13 +135,15 @@ class MultiModalModel(nn.Module):
 
         # Cross-Attention Fusion Layer
         # We treat each modality embedding as a token in a sequence.
+        # Using norm_first (Pre-LN) for stability and better gradient flow
         self.fusion_layers = nn.TransformerEncoder(
             encoder_layer=nn.TransformerEncoderLayer(
                 d_model=emb_dim, 
                 nhead=4, 
                 dim_feedforward=hidden_dim, 
                 dropout=0.1,
-                batch_first=True
+                batch_first=True,
+                norm_first=True  # Pre-Layer Normalization
             ),
             num_layers=2
         )
