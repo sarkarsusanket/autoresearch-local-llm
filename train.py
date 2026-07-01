@@ -115,25 +115,41 @@ class MLPBlock(nn.Module):
 
 
 class MultiModalModel(nn.Module):
-    def __init__(self, modality_dict, emb_dim=512, hidden_dim=512):
+    def __init__(self, modality_dict, emb_dim=512, hidden_dim=1024):
         super().__init__()
         self.emb_dim = emb_dim
         self.modality_names = list(modality_dict.keys())
+        self.n_modalities = len(self.modality_names)
+        
+        # Encoders project each modality to emb_dim
         self.encoders = nn.ModuleDict({
-            name: MLPBlock(dim, emb_dim)
+            name: MLPBlock(dim, emb_dim, hidden_dim=hidden_dim)
             for name, dim in modality_dict.items()
         })
+        
+        # Decoders project fused embedding back to original dims
         self.decoders = nn.ModuleDict({
-            name: MLPBlock(emb_dim, dim)
+            name: MLPBlock(emb_dim, dim, hidden_dim=hidden_dim)
             for name, dim in modality_dict.items()
         })
 
+        # Learnable fusion weights (soft attention over modalities)
+        self.fusion_weights = nn.Parameter(torch.ones(self.n_modalities) / self.n_modalities)
+
     def encode(self, inputs):
         encoded = {}
-        for name in inputs:
-            encoded[name] = self.encoders[name](inputs[name])
-        stacked = torch.stack(list(encoded.values()), dim=1) # (B, N_modalities, emb_dim)
-        fused = stacked.mean(dim=1) # Global average pooling across modalities
+        for name in self.modality_names:
+            if name in inputs and inputs[name] is not None:
+                encoded[name] = self.encoders[name](inputs[name])
+            else:
+                encoded[name] = torch.zeros_like(inputs.get(name, torch.empty(0)))
+        
+        # Stack along modality dimension: (B, N_modalities, emb_dim)
+        stacked = torch.stack(list(encoded.values()), dim=1)
+        
+        # Apply softmax to fusion weights for stable gradients and interpretability
+        weights = F.softmax(self.fusion_weights, dim=0).unsqueeze(0).unsqueeze(-1) # (1, N, 1)
+        fused = (stacked * weights).sum(dim=1) # Weighted sum across modalities
         return fused
 
     def forward(self, inputs):
