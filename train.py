@@ -72,12 +72,7 @@ HIDDEN_DIM = 512
 BATCH_SIZE = 256
 LR = 3e-4
 MASK_RATIO = 0.3
-# ---------------------------------------------------------------------------
-EMB_DIM = 512
-HIDDEN_DIM = 512
-BATCH_SIZE = 256
-LR = 3e-4
-MASK_RATIO = 0.3
+
 
 # ---------------------------------------------------------------------------
 # Data
@@ -112,7 +107,7 @@ class MLPBlock(nn.Module):
             nn.GELU(),
             nn.LayerNorm(hidden_dim),
             nn.Dropout(0.1),
-            nn.Linear(hidden_dim, out_dim) if in_dim == out_dim else nn.Identity()
+            nn.Identity() if in_dim == out_dim else nn.Linear(hidden_dim, out_dim)
         )
 
     def forward(self, x):
@@ -144,7 +139,7 @@ class MultiModalModel(nn.Module):
     def forward(self, inputs):
         fused = self.encode(inputs)
         decoded = {name: dec(fused) for name, dec in self.decoders.items()}
-        return decoded
+        return decoded, fused
 
 
 def create_mask(batch, mask_ratio=None):
@@ -210,7 +205,7 @@ try:
         mask = create_mask(batch, MASK_RATIO)
 
         with autocast_ctx:
-            decoded, fused = model(batch, mask)
+            decoded, fused = model(batch)
             loss = compute_loss(decoded, batch)
 
         loss_val = loss.detach().item()
@@ -267,7 +262,7 @@ all_tensors = {
     for name in modality_names
 }
 with torch.no_grad():
-    _, embeddings = model(all_tensors, mask=None)
+    _, embeddings = model(all_tensors)
 embeddings_np = embeddings.cpu().numpy()
 
 # ---------------------------------------------------------------------------
