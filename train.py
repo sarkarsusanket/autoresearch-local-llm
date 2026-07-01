@@ -146,7 +146,7 @@ class MultiModalModel(nn.Module):
             encoder_layer=nn.TransformerEncoderLayer(
                 d_model=emb_dim, 
                 nhead=8,  # Increased heads for better parallelization of spatial correlations in geodata
-                dim_feedforward=int(hidden_dim * 4),  # Wider FFN to capture richer non-linear interactions between modalities (e.g., audio speech vs image brightness)
+                dim_feedforward=int(hidden_dim * 2),  # Reduced FFN width to improve convergence speed within time budget while retaining capacity (standard practice is often hidden_dim or slightly wider)
                 dropout=0.1,      
                 batch_first=True,
                 norm_first=True  
