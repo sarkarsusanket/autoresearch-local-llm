@@ -127,14 +127,15 @@ class MultiModalModel(nn.Module):
         self.n_modalities = len(self.modality_names)
         
         # Encoders project each modality to emb_dim
+        # Simplified encoders/decoders using direct Linear projection to avoid dimension mismatches and reduce compute time.
         self.encoders = nn.ModuleDict({
-            name: MLPBlock(dim, emb_dim, hidden_dim=hidden_dim)
+            name: nn.Sequential(nn.LayerNorm(dim), nn.Linear(dim, emb_dim)) 
             for name, dim in modality_dict.items()
         })
         
-        # Decoders project fused embedding back to original dims
+        # Decoders project fused embedding back to original dims using direct Linear + Norm
         self.decoders = nn.ModuleDict({
-            name: MLPBlock(emb_dim, dim, hidden_dim=hidden_dim)
+            name: nn.Sequential(nn.LayerNorm(emb_dim), nn.Linear(emb_dim, dim)) 
             for name, dim in modality_dict.items()
         })
 
