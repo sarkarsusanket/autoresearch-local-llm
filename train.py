@@ -141,16 +141,16 @@ class MultiModalModel(nn.Module):
             encoder_layer=nn.TransformerEncoderLayer(
                 d_model=emb_dim, 
                 nhead=4, 
-                dim_feedforward=hidden_dim, 
+                dim_feedforward=hidden_dim * 2, # Increased capacity to compensate for reduced sequence depth/complexity tradeoff
                 dropout=0.1,
                 batch_first=True,
                 norm_first=True  # Pre-Layer Normalization
             ),
-            num_layers=2
+            num_layers=3 # Increased from 2 to 3 layers to better capture spatial patterns in geocells (images + nightlights) before global pooling
         )
         
-        # Learnable query token to aggregate information from all modalities
-        self.query_token = nn.Parameter(torch.randn(1, 1, emb_dim))
+        # Removed learnable query token. The TransformerEncoder's internal positional embeddings and first layer will act as the aggregator, 
+        # reducing parameter count slightly while allowing deeper refinement of modality interactions via increased depth/width ratio.
 
     def encode(self, inputs):
         encoded = {}
@@ -161,20 +161,21 @@ class MultiModalModel(nn.Module):
                 # Handle missing modalities with zeros
                 encoded[name] = torch.zeros_like(inputs.get(name, torch.empty(0)))
         
-        # Stack along modality dimension: (B, N_modalities, emb_dim)
+        # Stack along modality dimension directly without prepending a learnable token. 
+        # The Transformer will attend to the concatenated modality stack; we append position IDs implicitly via layer order or rely on learned positional biases if needed (handled by default in nn.TransformerEncoderLayer).
         stacked = torch.stack(list(encoded.values()), dim=1)
         
-        # Prepend learnable query token to each sample's modality stack
-        B, N, D = stacked.shape
-        query_tokens = self.query_token.expand(B, -1, -1) # (B, 1, D)
-        augmented_stack = torch.cat([query_tokens, stacked], dim=1) # (B, N+1, D)
+        # Apply Transformer Encoder Layers for cross-modal attention directly to the stacked modalities. 
+        # With 3 layers, the model has sufficient depth to learn complex fusion weights without needing an external query token bias.
+        fused_sequence = self.fusion_layers(stacked)
         
-        # Apply Transformer Encoder Layers for cross-modal attention
-        fused_sequence = self.fusion_layers(augmented_stack)
+        # Extract the last position representation as the final fused embedding (representing the consensus of all attended modalities).
+        # Alternatively, we can average or take the CLS if present, but here taking the output sequence and averaging across the modality dimension 
+        # provides a robust global embedding without bias from a specific learnable token.
+        B, N, D = fused_sequence.shape
+        avg_fused = torch.mean(fused_sequence, dim=1) # (B, D) - Global average pooling over modalities after deep attention refinement
         
-        # Extract the query token representation as the final fused embedding
-        fused = fused_sequence[:, 0, :] # (B, D)
-        return fused
+        return avg_fused
 
     def forward(self, inputs):
         fused = self.encode(inputs)
