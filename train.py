@@ -187,7 +187,33 @@ def create_mask(batch, mask_ratio=None):
 def compute_loss(decoded, targets):
     # Using MSE which is standard and stable for this architecture; no need to sum if we want scalar loss per modality averaged implicitly or explicitly here. 
     # To keep it simple and robust: average the losses across modalities for a single gradient step signal.
-    return torch.mean(torch.stack([F.mse_loss(decoded[name], targets[name]) for name in decoded]))
+    
+    # Add Cosine Similarity Loss to encourage geometric consistency in embedding space
+    # This helps downstream clustering/classification by preserving angular relationships
+    cos_sim_loss = 0.0
+    n_cos_pairs = 0
+    
+    # Sample a small subset of pairs to keep computation light (B*10 pairs)
+    for name in decoded:
+        recon = decoded[name]
+        target = targets[name]
+        
+        # Normalize vectors for cosine similarity
+        recon_norm = F.normalize(recon, p=2, dim=-1)
+        target_norm = F.normalize(target, p=2, dim=-1)
+        
+        # Cosine similarity between reconstruction and target (higher is better)
+        cos_sim = torch.sum(recon_norm * target_norm, dim=-1).mean()
+        cos_sim_loss += (1.0 - cos_sim)
+        n_cos_pairs += 1
+        
+    if n_cos_pairs > 0:
+        cos_sim_loss /= n_cos_pairs
+    
+    mse_loss = torch.mean(torch.stack([F.mse_loss(decoded[name], targets[name]) for name in decoded]))
+    
+    # Weighted combination: primarily MSE for reconstruction, small cosine penalty for geometry
+    return mse_loss + 0.1 * cos_sim_loss
 
 
 # ---------------------------------------------------------------------------
