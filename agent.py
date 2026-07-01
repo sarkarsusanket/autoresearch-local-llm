@@ -21,7 +21,7 @@ from datetime import datetime
 # ---------------------------------------------------------------------------
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL = "ornith:latest" # os.environ.get("AUTORESEARCH_MODEL", "Qwen3.5:latest")
+MODEL = os.environ.get("AUTORESEARCH_MODEL", "Qwen3.5:latest")
 TRAIN_SCRIPT = "train.py"
 RESULTS_FILE = "results.tsv"
 RUN_LOG = "run.log"
@@ -204,14 +204,14 @@ def validate_syntax(code):
 
 
 def extract_hyperparams(code):
-    """Extract the hyperparameter section from train.py for the prompt."""
+    """Extract the hyperparameter section from train.py."""
     lines = code.split("\n")
     hyper_lines = []
     in_section = False
     for line in lines:
-        if "Hyperparameters" in line or "# Model architecture" in line:
+        if "# Hyperparameters" in line:
             in_section = True
-        if in_section and ("Setup:" in line or "tokenizer" in line.lower()):
+        if in_section and "# Data" in line:
             break
         if in_section:
             hyper_lines.append(line)
@@ -224,12 +224,12 @@ def extract_model_section(code):
     model_lines = []
     in_section = False
     for i, line in enumerate(lines):
-        if "GPT Model" in line or "class GPTConfig" in line:
+        if "# Model" in line and "class" not in line:
             in_section = True
+        if in_section and "# Build model" in line:
+            break
         if in_section:
             model_lines.append(line)
-        if in_section and line.strip().startswith("class MuonAdamW"):
-            break
     return "\n".join(model_lines) if model_lines else ""
 
 
@@ -285,7 +285,7 @@ def parse_search_replace_blocks(response):
 # Agent prompts
 # ---------------------------------------------------------------------------
 
-def build_experiment_prompt(train_code, results_history, best_f1, crash_info=None):
+def build_experiment_prompt(train_code, results_history, best_f1, crash_info=None, feedback=None):
     """Build the prompt for the LLM to propose an experiment."""
 
     with open("program.md", "r", encoding="utf-8") as f:
@@ -294,57 +294,60 @@ def build_experiment_prompt(train_code, results_history, best_f1, crash_info=Non
     hyper_section = extract_hyperparams(train_code)
     model_section = extract_model_section(train_code)
 
-    prompt = f"""You are an autonomous ML researcher optimizing a GPT training script.
+    prompt = f"""You are an autonomous ML researcher optimizing a multi-modal embedding model.
 
-        GOAL: Higher F1 (bits per byte on validation set). Current best: {best_f1:.6f}
+GOAL: Maximize macro F1 on downstream geospatial tasks. Current best: {best_f1:.6f}
 
-        CONSTRAINTS:
-        - Only modify train.py using search/replace blocks (see format below)
-        - Cannot modify data.py or agent.py (data loading, evaluation are fixed)
-        - Cannot install new packages
-        - Training runs for a fixed 30-minute time budget
-        - This system uses NVIDIA CUDA
-        - The code auto-detects MPS vs CUDA - do NOT add device-specific code
-        - Do NOT use torch.compile decorators or CUDA-specific APIs
-        - Do NOT use flash-attn or kernels package (we use F.scaled_dot_product_attention)
-        - TOTAL_BATCH_SIZE must be divisible by (DEVICE_BATCH_SIZE * 2048)
+CONSTRAINTS:
+- Only modify train.py using SEARCH/REPLACE blocks
+- Cannot modify data.py (data loading is fixed)
+- Cannot modify prepare.py (TIME_BUDGET is fixed)
+- Cannot modify eval.py (evaluation is fixed)
+- Cannot install new packages
+- Training runs for a fixed 5-minute time budget
+- This system uses NVIDIA CUDA on Windows (no triton — no torch.compile)
+- The data is 4 modalities (audio, image, nightlights, standard) with 32,157 geocells
 
-        SOME CONTEXT:
-        ```
-        {PROGRAM_FUNC}
-        ```
+TASK CONTEXT (from program.md):
+```
+{PROGRAM_FUNC}
+```
 
-        HYPERPARAMETERS SECTION of train.py:
-        ```
-        {hyper_section}
-        ```
+CURRENT HYPERPARAMETERS in train.py:
+```
+{hyper_section}
+```
 
-        MODEL ARCHITECTURE of train.py:
-        ```
-        {model_section}
-        ```
+CURRENT MODEL ARCHITECTURE in train.py:
+```
+{model_section}
+```
 
-        EXPERIMENT HISTORY:
-        {results_history}
+EXPERIMENT HISTORY:
+{results_history}
 
-        {"LAST CRASH:" + chr(10) + crash_info if crash_info else ""}
+{"LAST CRASH:" + chr(10) + crash_info if crash_info else ""}
+{"PREVIOUS ATTEMPT FEEDBACK:" + chr(10) + feedback if feedback else ""}
 
-        INSTRUCTIONS:
-        1. Propose ONE specific, targeted modification to improve f1
-        2. Explain your reasoning in 1-2 sentences
-        3. Output your change as SEARCH/REPLACE blocks (copy the exact text to find, then the replacement)
+INSTRUCTIONS:
+1. Propose ONE specific, targeted modification to improve F1
+2. Explain your reasoning in 1-2 sentences
+3. Output your change as SEARCH/REPLACE blocks
 
-        OUTPUT FORMAT — use this exact format for each change:
-        <<<SEARCH
-        exact lines to find in train.py
-        >>>
-        <<<REPLACE
-        replacement lines
-        >>>
+OUTPUT FORMAT — use this exact format for each change:
+<<<SEARCH
+exact lines to find in train.py
+>>>
+<<<REPLACE
+replacement lines
+>>>
 
-        You can include multiple SEARCH/REPLACE blocks if needed, but keep changes minimal.
-        Focus on: depth, width, learning rates, batch size, activation functions, attention patterns.
-        Be bold but practical. ONE targeted change is better than rewriting everything."""
+The SEARCH text must be an EXACT character-for-character match of existing code in train.py.
+Include surrounding context lines so the match is unique. Whitespace matters.
+
+Focus on: model architecture (encoders, decoders, fusion), loss function, masking strategy,
+hyperparameters (EMB_DIM, HIDDEN_DIM, LR, BATCH_SIZE, MASK_RATIO), data normalization.
+Be bold but practical. ONE targeted change is better than rewriting everything."""
     return prompt
 
 
@@ -361,7 +364,9 @@ def main():
 
     init_results()
     consecutive_crashes = 0
+    consecutive_sr_failures = 0
     experiment_num = 0
+    last_feedback = None
 
     # Check if baseline exists
     results = get_results_history()
@@ -398,10 +403,11 @@ def main():
 
         # Ask LLM for a modification
         print("  Querying LLM for experiment proposal...")
-        prompt = build_experiment_prompt(train_code, results_history, best_f1, crash_context)
-        response = query_llm(prompt, max_tokens=2048)
+        prompt = build_experiment_prompt(train_code, results_history, best_f1, crash_context, last_feedback)
+        response = query_llm(prompt, max_tokens=4096)
 
         if not response:
+            last_feedback = "LLM returned an empty response."
             print("  LLM returned empty response, waiting 30s...")
             time.sleep(30)
             experiment_num += 1
@@ -410,6 +416,18 @@ def main():
         # Parse search/replace blocks
         blocks = parse_search_replace_blocks(response)
         if not blocks:
+            last_feedback = (
+                "Your response did not contain valid SEARCH/REPLACE blocks.\n"
+                "Required format:\n"
+                "<<<SEARCH\n"
+                "exact lines to match\n"
+                ">>>\n"
+                "<<<REPLACE\n"
+                "replacement lines\n"
+                ">>>\n\n"
+                "Your full response was:\n"
+                + response[:1500]
+            )
             print("  Could not parse SEARCH/REPLACE blocks from response")
             preview = response[:500].replace("\n", "\n    ")
             print(f"    Response preview:\n    {preview}")
@@ -423,28 +441,45 @@ def main():
             modified_code, success = apply_search_replace(modified_code, search, replace)
             if not success:
                 print(f"  SEARCH block {i+1} not found in train.py:")
-                print(f"    Looking for: {search[:100]}...")
+                print(f"    Looking for: {search[:200]}...")
+                last_feedback = (
+                    f"SEARCH block {i+1} was NOT found in train.py.\n"
+                    f"Searched for these exact lines:\n"
+                    f"```\n{search[:500]}\n```\n"
+                    f"The text must be an exact character-for-character match. "
+                    f"Copy the code directly from train.py — do not paraphrase or reformat. "
+                    f"Include enough surrounding context for a unique match."
+                )
                 all_applied = False
                 break
 
         if not all_applied:
             print("  Failed to apply changes, skipping")
             experiment_num += 1
-            consecutive_crashes += 1
-            if consecutive_crashes >= MAX_CONSECUTIVE_CRASHES:
-                print(f"  {MAX_CONSECUTIVE_CRASHES} consecutive failures, resetting...")
-                consecutive_crashes = 0
+            consecutive_sr_failures += 1
+            if consecutive_sr_failures >= MAX_CONSECUTIVE_CRASHES:
+                print(f"  {MAX_CONSECUTIVE_CRASHES} consecutive SEARCH/REPLACE failures, resetting feedback...")
+                consecutive_sr_failures = 0
+                last_feedback = None
             continue
 
         # Validate syntax of modified code
         valid, error = validate_syntax(modified_code)
         if not valid:
             print(f"  Syntax error after applying changes: {error}")
+            last_feedback = (
+                f"Syntax error after applying your changes:\n{error}\n\n"
+                f"Your proposed replacement introduced invalid Python. "
+                f"Make sure the code is syntactically valid." + (
+                    f"\n\nYour response:\n{response[:1000]}" if response else ""
+                )
+            )
             experiment_num += 1
-            consecutive_crashes += 1
-            if consecutive_crashes >= MAX_CONSECUTIVE_CRASHES:
-                print(f"  {MAX_CONSECUTIVE_CRASHES} consecutive failures, resetting...")
-                consecutive_crashes = 0
+            consecutive_sr_failures += 1
+            if consecutive_sr_failures >= MAX_CONSECUTIVE_CRASHES:
+                print(f"  {MAX_CONSECUTIVE_CRASHES} consecutive SEARCH/REPLACE failures, resetting feedback...")
+                consecutive_sr_failures = 0
+                last_feedback = None
             continue
 
         # Extract description from LLM response
@@ -455,6 +490,8 @@ def main():
         description = desc_lines[0][:100] if desc_lines else f"experiment {experiment_num}"
 
         # Apply and commit
+        consecutive_sr_failures = 0
+        last_feedback = None
         write_train_py(modified_code)
         print(f"  Applied {len(blocks)} change(s): {description}")
         try:
