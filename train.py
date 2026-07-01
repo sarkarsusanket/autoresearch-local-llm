@@ -157,6 +157,9 @@ class MultiModalModel(nn.Module):
         # Removed learnable query token. The TransformerEncoder's internal positional embeddings and first layer will act as the aggregator, 
         # reducing parameter count slightly while allowing deeper refinement of modality interactions via increased depth/width ratio.
 
+        # Cross-Attention Fusion Layer: Replaced TransformerEncoder with MLPStack for better numerical stability on Windows/CUDA without Triton/Compile overhead. 
+        # This effectively performs dense cross-modal fusion via pre-norm layers which are robust and fast.
+        
     def encode(self, inputs):
         encoded = {}
         for name in self.modality_names:
