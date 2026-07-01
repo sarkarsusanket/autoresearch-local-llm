@@ -227,7 +227,7 @@ def compute_loss(decoded, targets):
     mse_loss = torch.mean(torch.stack([F.mse_loss(decoded[name], targets[name]) for name in decoded]))
     
     # Shift focus to angular consistency which is critical for geospatial clustering/classification (F1)
-    return mse_loss + 0.5 * cos_sim_loss
+    return 0.3 * mse_loss + cos_sim_loss
 
 
 # ---------------------------------------------------------------------------
