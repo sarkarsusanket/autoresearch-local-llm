@@ -30,7 +30,13 @@ Each experiment runs on a single GPU. The training script runs for a **fixed tim
 
 **Simplicity criterion**: All else being equal, simpler is better. A small improvement that adds ugly complexity is not worth it. Conversely, removing something complex and getting equal or better results is a great outcome — that's a simplification win. When evaluating whether to keep a change, weigh the complexity cost against the improvement magnitude. A 0.001 f1 improvement that adds 20 lines of hacky code? Probably not worth it. A 0.001 f1 improvement from deleting code? Definitely keep. An improvement of ~0 but much simpler code? Keep.
 
-**Model Architecture**: Let me reiterate that the best architechture should win and in that pursuit, you should explore all kinds or architecture starting from simple mlp to view based mlp to cross attention. Whatever seems to give the best reuslt should win. Dont shy away as long as it is giving good results.
+**Model Architecture**: Let me reiterate that the best architechture should win and in that pursuit, you should explore all kinds or architecture starting from simple mlp to view based mlp to cross attention. Whatever seems to give the best reuslt should win. Dont shy away as long as it is giving good results. Also, you can use the context of the files like:
+- standard file in the data has demography data, 
+- image.npy ha image data of the geocell, 
+- audio.npy has the audio embs of how people speak
+- nightlights.npy has the nightlight image info of the geocell
+You must remember each of this row is actually geocells, in physical space, some admin bounds of the USA
+
 
 **The first run**: Your very first run should always be to establish the baseline, so you will run the training script as is.
 
@@ -71,6 +77,7 @@ commit	f1 memory_gb	status	description
 3. peak memory in GB, round to .1f (e.g. 12.3 — divide peak_vram_mb by 1024) — use 0.0 for crashes
 4. status: `keep`, `discard`, or `crash`
 5. short text description of what this experiment tried
+6. You're only allowed to commit and not to push anything, or redact any already pushed changes.
 
 Example:
 
