@@ -141,12 +141,12 @@ class MultiModalModel(nn.Module):
             encoder_layer=nn.TransformerEncoderLayer(
                 d_model=emb_dim, 
                 nhead=4, 
-                dim_feedforward=hidden_dim * 2, # Increased capacity to compensate for reduced sequence depth/complexity tradeoff
-                dropout=0.1,
+                dim_feedforward=int(hidden_dim * 2), # Standard FFN width to reduce VRAM pressure and avoid OOM on fixed budget
+                dropout=0.3,      # Increased regularization crucial for small dataset (32k samples) to prevent overfitting
                 batch_first=True,
-                norm_first=True  # Pre-Layer Normalization
+                norm_first=True  
             ),
-            num_layers=3 # Increased from 2 to 3 layers to better capture spatial patterns in geocells (images + nightlights) before global pooling
+            num_layers=1          # Reduced depth as N=4 sequence is too short to benefit from deep stacks; width/regularization matters more
         )
         
         # Removed learnable query token. The TransformerEncoder's internal positional embeddings and first layer will act as the aggregator, 
