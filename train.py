@@ -116,8 +116,12 @@ class MLPBlock(nn.Module):
 
 
 class MultiModalModel(nn.Module):
-    def __init__(self, modality_dict, emb_dim=512, hidden_dim=768):
+    def __init__(self, modality_dict, emb_dim, hidden_dim):
         super().__init__()
+        # Validate inputs to ensure model is not empty
+        if len(modality_dict) == 0:
+            raise ValueError("modality_dict cannot be empty")
+            
         self.emb_dim = emb_dim
         self.modality_names = list(modality_dict.keys())
         self.n_modalities = len(self.modality_names)
