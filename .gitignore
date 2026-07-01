@@ -25,3 +25,6 @@ results.tsv
 
 # Run logs
 run.log
+
+
+*.parquet
