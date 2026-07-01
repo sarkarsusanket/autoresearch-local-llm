@@ -70,7 +70,7 @@ torch.set_float32_matmul_precision("high")
 EMB_DIM = 512
 HIDDEN_DIM = 512
 BATCH_SIZE = 256
-LR = 3e-4
+LR = 5e-4
 MASK_RATIO = 0.3
 
 
@@ -135,12 +135,15 @@ class MultiModalModel(nn.Module):
 
         # Cross-Attention Fusion Layer
         # We treat each modality embedding as a token in a sequence.
-        self.fusion_layer = nn.TransformerEncoderLayer(
-            d_model=emb_dim, 
-            nhead=4, 
-            dim_feedforward=hidden_dim, 
-            dropout=0.1,
-            batch_first=True
+        self.fusion_layers = nn.TransformerEncoder(
+            encoder_layer=nn.TransformerEncoderLayer(
+                d_model=emb_dim, 
+                nhead=4, 
+                dim_feedforward=hidden_dim, 
+                dropout=0.1,
+                batch_first=True
+            ),
+            num_layers=2
         )
         
         # Learnable query token to aggregate information from all modalities
@@ -163,8 +166,8 @@ class MultiModalModel(nn.Module):
         query_tokens = self.query_token.expand(B, -1, -1) # (B, 1, D)
         augmented_stack = torch.cat([query_tokens, stacked], dim=1) # (B, N+1, D)
         
-        # Apply Transformer Encoder Layer for cross-modal attention
-        fused_sequence = self.fusion_layer(augmented_stack)
+        # Apply Transformer Encoder Layers for cross-modal attention
+        fused_sequence = self.fusion_layers(augmented_stack)
         
         # Extract the query token representation as the final fused embedding
         fused = fused_sequence[:, 0, :] # (B, D)
