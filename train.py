@@ -102,12 +102,13 @@ del data
 class MLPBlock(nn.Module):
     def __init__(self, in_dim, out_dim, hidden_dim=512):
         super().__init__()
+        # Simplify to Pre-LN with GELU for stability; remove redundant Identity/Linear complexity
         self.net = nn.Sequential(
+            nn.LayerNorm(in_dim),  # Normalize input first (Pre-Norm) immediately
             nn.Linear(in_dim, hidden_dim),
             nn.GELU(),
-            nn.LayerNorm(hidden_dim),
             nn.Dropout(0.1),
-            nn.Identity() if in_dim == out_dim else nn.Linear(hidden_dim, out_dim)
+            nn.Linear(hidden_dim, out_dim) if in_dim != out_dim else nn.Identity()
         )
 
     def forward(self, x):
