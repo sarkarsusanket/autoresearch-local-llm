@@ -115,7 +115,7 @@ class MLPBlock(nn.Module):
 
 
 class MultiModalModel(nn.Module):
-    def __init__(self, modality_dict, emb_dim=512, hidden_dim=1024):
+    def __init__(self, modality_dict, emb_dim=512, hidden_dim=768):
         super().__init__()
         self.emb_dim = emb_dim
         self.modality_names = list(modality_dict.keys())
@@ -133,8 +133,18 @@ class MultiModalModel(nn.Module):
             for name, dim in modality_dict.items()
         })
 
-        # Learnable fusion weights (soft attention over modalities)
-        self.fusion_weights = nn.Parameter(torch.ones(self.n_modalities) / self.n_modalities)
+        # Cross-Attention Fusion Layer
+        # We treat each modality embedding as a token in a sequence.
+        self.fusion_layer = nn.TransformerEncoderLayer(
+            d_model=emb_dim, 
+            nhead=4, 
+            dim_feedforward=hidden_dim, 
+            dropout=0.1,
+            batch_first=True
+        )
+        
+        # Learnable query token to aggregate information from all modalities
+        self.query_token = nn.Parameter(torch.randn(1, 1, emb_dim))
 
     def encode(self, inputs):
         encoded = {}
@@ -142,14 +152,22 @@ class MultiModalModel(nn.Module):
             if name in inputs and inputs[name] is not None:
                 encoded[name] = self.encoders[name](inputs[name])
             else:
+                # Handle missing modalities with zeros
                 encoded[name] = torch.zeros_like(inputs.get(name, torch.empty(0)))
         
         # Stack along modality dimension: (B, N_modalities, emb_dim)
         stacked = torch.stack(list(encoded.values()), dim=1)
         
-        # Apply softmax to fusion weights for stable gradients and interpretability
-        weights = F.softmax(self.fusion_weights, dim=0).unsqueeze(0).unsqueeze(-1) # (1, N, 1)
-        fused = (stacked * weights).sum(dim=1) # Weighted sum across modalities
+        # Prepend learnable query token to each sample's modality stack
+        B, N, D = stacked.shape
+        query_tokens = self.query_token.expand(B, -1, -1) # (B, 1, D)
+        augmented_stack = torch.cat([query_tokens, stacked], dim=1) # (B, N+1, D)
+        
+        # Apply Transformer Encoder Layer for cross-modal attention
+        fused_sequence = self.fusion_layer(augmented_stack)
+        
+        # Extract the query token representation as the final fused embedding
+        fused = fused_sequence[:, 0, :] # (B, D)
         return fused
 
     def forward(self, inputs):
