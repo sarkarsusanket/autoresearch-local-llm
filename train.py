@@ -67,8 +67,8 @@ torch.set_float32_matmul_precision("high")
 
 # ---------------------------------------------------------------------------
 # Hyperparameters
-EMB_DIM = 512
-HIDDEN_DIM = 512
+EMB_DIM = 768
+HIDDEN_DIM = 768
 BATCH_SIZE = 256
 LR = 1e-3
 MASK_RATIO = 0.3
