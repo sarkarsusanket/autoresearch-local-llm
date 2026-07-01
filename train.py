@@ -142,11 +142,11 @@ class MultiModalModel(nn.Module):
                 d_model=emb_dim, 
                 nhead=4, 
                 dim_feedforward=int(hidden_dim * 2), # Standard FFN width to reduce VRAM pressure and avoid OOM on fixed budget
-                dropout=0.1,      # Reduced regularization (from 0.3) for N=4 sequence; high dropout destroys signal in short sequences while still providing essential noise injection against overfitting
+                dropout=0.1,      # Reduced regularization for N=4 sequence; high dropout destroys signal in short sequences while still providing essential noise injection against overfitting
                 batch_first=True,
                 norm_first=True  
             ),
-            num_layers=1          # Reduced depth as N=4 sequence is too short to benefit from deep stacks; width/regularization matters more
+            num_layers=2          # Depth limited as N=4 is too short to benefit from deep stacks without vanishing gradients
         )
         
         # Removed learnable query token. The TransformerEncoder's internal positional embeddings and first layer will act as the aggregator, 
