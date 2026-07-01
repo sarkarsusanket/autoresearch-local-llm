@@ -3,7 +3,7 @@ Local LLM Agent for autoresearch — replaces Claude Code with a local LLM via o
 
 Uses search/replace blocks instead of full file rewrites for faster, more reliable
 modifications. Proposes modifications to train.py, validates syntax, runs experiments,
-and keeps/discards based on val_bpb.
+and keeps/discards based on f1
 
 Usage: PYTHONUNBUFFERED=1 uv run python3 agent.py
 """
@@ -88,7 +88,7 @@ def get_current_commit():
 # ---------------------------------------------------------------------------
 
 def run_experiment():
-    """Run train.py and return (val_bpb, peak_vram_mb) or (None, None) on failure."""
+    """Run train.py and return (f1, peak_vram_mb) or (None, None) on failure."""
     print(f"  Running experiment... (timeout: {RUN_TIMEOUT}s)")
     try:
         with open(RUN_LOG, "w") as log_file:
@@ -108,20 +108,20 @@ def run_experiment():
         return None, None
 
     # Parse results
-    val_bpb = None
+    f1 = None
     peak_vram = None
     try:
         with open(RUN_LOG, "r") as f:
             for line in f:
                 line = line.strip()
-                if line.startswith("val_bpb:"):
-                    val_bpb = float(line.split(":")[1].strip())
+                if line.startswith("f1:"):
+                    f1 = float(line.split(":")[1].strip())
                 elif line.startswith("peak_vram_mb:"):
                     peak_vram = float(line.split(":")[1].strip())
     except Exception as e:
         print(f"  Error parsing run.log: {e}")
 
-    return val_bpb, peak_vram
+    return f1, peak_vram
 
 
 def get_crash_info():
@@ -142,14 +142,14 @@ def init_results():
     """Initialize results.tsv if it doesn't exist."""
     if not os.path.exists(RESULTS_FILE):
         with open(RESULTS_FILE, "w") as f:
-            f.write("commit\tval_bpb\tmemory_gb\tstatus\tdescription\n")
+            f.write("commit\tf1\tmemory_gb\tstatus\tdescription\n")
 
 
-def log_result(commit, val_bpb, memory_gb, status, description):
+def log_result(commit, f1, memory_gb, status, description):
     """Append a result to results.tsv."""
     with open(RESULTS_FILE, "a") as f:
-        f.write(f"{commit}\t{val_bpb:.6f}\t{memory_gb:.1f}\t{status}\t{description}\n")
-    print(f"  Logged: {commit} | val_bpb={val_bpb:.6f} | {memory_gb:.1f}GB | {status} | {description}")
+        f.write(f"{commit}\t{f1:.6f}\t{memory_gb:.1f}\t{status}\t{description}\n")
+    print(f"  Logged: {commit} | f1={f1:.6f} | {memory_gb:.1f}GB | {status} | {description}")
 
 
 def get_results_history():
@@ -160,9 +160,9 @@ def get_results_history():
         return f.read()
 
 
-def get_best_bpb():
-    """Get the best (lowest) val_bpb from results history."""
-    best = float("inf")
+def get_best_f1():
+    """Get the best (highest) f1 from results history."""
+    best = float("-inf")
     if not os.path.exists(RESULTS_FILE):
         return best
     with open(RESULTS_FILE, "r") as f:
@@ -170,9 +170,9 @@ def get_best_bpb():
             parts = line.strip().split("\t")
             if len(parts) >= 4 and parts[3] == "keep":
                 try:
-                    bpb = float(parts[1])
-                    if bpb > 0 and bpb < best:
-                        best = bpb
+                    f1 = float(parts[1])
+                    if f1 > 0 and f1 > best:
+                        best = f1
                 except ValueError:
                     continue
     return best
@@ -285,58 +285,66 @@ def parse_search_replace_blocks(response):
 # Agent prompts
 # ---------------------------------------------------------------------------
 
-def build_experiment_prompt(train_code, results_history, best_bpb, crash_info=None):
+def build_experiment_prompt(train_code, results_history, best_f1, crash_info=None):
     """Build the prompt for the LLM to propose an experiment."""
+
+    with open("program.md", "r", encoding="utf-8") as f:
+        PROGRAM_FUNC = f.read()
 
     hyper_section = extract_hyperparams(train_code)
     model_section = extract_model_section(train_code)
 
     prompt = f"""You are an autonomous ML researcher optimizing a GPT training script.
 
-GOAL: Lower val_bpb (bits per byte on validation set). Current best: {best_bpb:.6f}
+        GOAL: Higher F1 (bits per byte on validation set). Current best: {best_f1:.6f}
 
-CONSTRAINTS:
-- Only modify train.py using search/replace blocks (see format below)
-- Cannot modify prepare.py (data loading, evaluation are fixed)
-- Cannot install new packages
-- Training runs for a fixed 5-minute time budget
-- This system uses Apple Silicon MPS (128GB unified memory) or NVIDIA CUDA
-- The code auto-detects MPS vs CUDA - do NOT add device-specific code
-- Do NOT use torch.compile decorators or CUDA-specific APIs
-- Do NOT use flash-attn or kernels package (we use F.scaled_dot_product_attention)
-- TOTAL_BATCH_SIZE must be divisible by (DEVICE_BATCH_SIZE * 2048)
+        CONSTRAINTS:
+        - Only modify train.py using search/replace blocks (see format below)
+        - Cannot modify data.py or agent.py (data loading, evaluation are fixed)
+        - Cannot install new packages
+        - Training runs for a fixed 30-minute time budget
+        - This system uses NVIDIA CUDA
+        - The code auto-detects MPS vs CUDA - do NOT add device-specific code
+        - Do NOT use torch.compile decorators or CUDA-specific APIs
+        - Do NOT use flash-attn or kernels package (we use F.scaled_dot_product_attention)
+        - TOTAL_BATCH_SIZE must be divisible by (DEVICE_BATCH_SIZE * 2048)
 
-HYPERPARAMETERS SECTION of train.py:
-```
-{hyper_section}
-```
+        SOME CONTEXT:
+        ```
+        {PROGRAM_FUNC}
+        ```
 
-MODEL ARCHITECTURE of train.py:
-```
-{model_section}
-```
+        HYPERPARAMETERS SECTION of train.py:
+        ```
+        {hyper_section}
+        ```
 
-EXPERIMENT HISTORY:
-{results_history}
+        MODEL ARCHITECTURE of train.py:
+        ```
+        {model_section}
+        ```
 
-{"LAST CRASH:" + chr(10) + crash_info if crash_info else ""}
+        EXPERIMENT HISTORY:
+        {results_history}
 
-INSTRUCTIONS:
-1. Propose ONE specific, targeted modification to improve val_bpb
-2. Explain your reasoning in 1-2 sentences
-3. Output your change as SEARCH/REPLACE blocks (copy the exact text to find, then the replacement)
+        {"LAST CRASH:" + chr(10) + crash_info if crash_info else ""}
 
-OUTPUT FORMAT — use this exact format for each change:
-<<<SEARCH
-exact lines to find in train.py
->>>
-<<<REPLACE
-replacement lines
->>>
+        INSTRUCTIONS:
+        1. Propose ONE specific, targeted modification to improve f1
+        2. Explain your reasoning in 1-2 sentences
+        3. Output your change as SEARCH/REPLACE blocks (copy the exact text to find, then the replacement)
 
-You can include multiple SEARCH/REPLACE blocks if needed, but keep changes minimal.
-Focus on: depth, width, learning rates, batch size, activation functions, attention patterns.
-Be bold but practical. ONE targeted change is better than rewriting everything."""
+        OUTPUT FORMAT — use this exact format for each change:
+        <<<SEARCH
+        exact lines to find in train.py
+        >>>
+        <<<REPLACE
+        replacement lines
+        >>>
+
+        You can include multiple SEARCH/REPLACE blocks if needed, but keep changes minimal.
+        Focus on: depth, width, learning rates, batch size, activation functions, attention patterns.
+        Be bold but practical. ONE targeted change is better than rewriting everything."""
     return prompt
 
 
@@ -360,11 +368,11 @@ def main():
     if "baseline" not in results.lower():
         print("\n--- Experiment 0: Baseline ---")
         base_commit = get_current_commit()
-        val_bpb, peak_vram = run_experiment()
-        if val_bpb is not None:
+        f1, peak_vram = run_experiment()
+        if f1 is not None:
             memory_gb = peak_vram / 1024 if peak_vram else 0
-            log_result(base_commit, val_bpb, memory_gb, "keep", "baseline")
-            print(f"  Baseline val_bpb: {val_bpb:.6f}")
+            log_result(base_commit, f1, memory_gb, "keep", "baseline")
+            print(f"  Baseline f1: {f1:.6f}")
         else:
             crash_info = get_crash_info()
             print(f"  Baseline run failed! Check run.log")
@@ -379,7 +387,7 @@ def main():
         print(f"--- Experiment {experiment_num} ---")
         print(f"Time: {datetime.now().isoformat()}")
 
-        best_bpb = get_best_bpb()
+        best_f1 = get_best_f1()
         base_commit = get_current_commit()
         train_code = read_train_py()
         results_history = get_results_history()
@@ -390,7 +398,7 @@ def main():
 
         # Ask LLM for a modification
         print("  Querying LLM for experiment proposal...")
-        prompt = build_experiment_prompt(train_code, results_history, best_bpb, crash_context)
+        prompt = build_experiment_prompt(train_code, results_history, best_f1, crash_context)
         response = query_llm(prompt, max_tokens=2048)
 
         if not response:
@@ -458,9 +466,9 @@ def main():
             continue
 
         # Run experiment
-        val_bpb, peak_vram = run_experiment()
+        f1, peak_vram = run_experiment()
 
-        if val_bpb is None:
+        if f1 is None:
             crash_info = get_crash_info()
             print(f"  CRASH: {crash_info[-200:]}")
             log_result(commit_hash, 0.0, 0.0, "crash", description)
@@ -474,16 +482,16 @@ def main():
             consecutive_crashes = 0
             memory_gb = peak_vram / 1024 if peak_vram else 0
 
-            if val_bpb < best_bpb:
-                log_result(commit_hash, val_bpb, memory_gb, "keep", description)
-                print(f"  KEEP: {val_bpb:.6f} < {best_bpb:.6f} (improved by {best_bpb - val_bpb:.6f})")
+            if f1 > best_f1:
+                log_result(commit_hash, f1, memory_gb, "keep", description)
+                print(f"  KEEP: {f1:.6f} > {best_f1:.6f} (improved by {f1 - best_f1:.6f})")
             else:
-                log_result(commit_hash, val_bpb, memory_gb, "discard", description)
-                print(f"  DISCARD: {val_bpb:.6f} >= {best_bpb:.6f}")
+                log_result(commit_hash, f1, memory_gb, "discard", description)
+                print(f"  DISCARD: {f1:.6f} <= {best_f1:.6f}")
                 git_reset_hard(base_commit)
 
         experiment_num += 1
-        print(f"  Best val_bpb so far: {get_best_bpb():.6f}")
+        print(f"  Best f1 so far: {get_best_f1():.6f}")
 
 
 if __name__ == "__main__":
