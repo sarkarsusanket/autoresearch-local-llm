@@ -11,6 +11,7 @@ wheels/
 worktrees/
 results/
 queue/
+data/
 
 # Agent prompt files (generated per-session by launchers)
 CLAUDE.md

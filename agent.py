@@ -184,13 +184,13 @@ def get_best_bpb():
 
 def read_train_py():
     """Read current train.py."""
-    with open(TRAIN_SCRIPT, "r") as f:
+    with open(TRAIN_SCRIPT, "r", encoding="utf-8") as f:
         return f.read()
 
 
 def write_train_py(code):
     """Write modified train.py."""
-    with open(TRAIN_SCRIPT, "w") as f:
+    with open(TRAIN_SCRIPT, "w", encoding="utf-8") as f:
         f.write(code)
 
 
