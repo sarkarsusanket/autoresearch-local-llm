@@ -160,6 +160,9 @@ class MultiModalModel(nn.Module):
         # Cross-Attention Fusion Layer: Replaced TransformerEncoder with MLPStack for better numerical stability on Windows/CUDA without Triton/Compile overhead. 
         # This effectively performs dense cross-modal fusion via pre-norm layers which are robust and fast.
         
+    # Cross-Attention Fusion Layer: Replaced TransformerEncoder with MLPStack for better numerical stability on Windows/CUDA without Triton/Compile overhead. 
+    # This effectively performs dense cross-modal fusion via pre-norm layers which are robust and fast.
+    
     def encode(self, inputs):
         encoded = {}
         for name in self.modality_names:
@@ -170,18 +173,14 @@ class MultiModalModel(nn.Module):
                 encoded[name] = torch.zeros_like(inputs.get(name, torch.empty(0)))
         
         # Stack along modality dimension directly without prepending a learnable token. 
-        # The Transformer will attend to the concatenated modality stack; we append position IDs implicitly via layer order or rely on learned positional biases if needed (handled by default in nn.TransformerEncoderLayer).
         stacked = torch.stack(list(encoded.values()), dim=1)
         
-        # Apply Transformer Encoder Layers for cross-modal attention directly to the stacked modalities. 
-        # With 3 layers, the model has sufficient depth to learn complex fusion weights without needing an external query token bias.
+        # Apply MLP fusion: Pre-Norm linear layers to mix modalities sequentially for stability and speed.
         fused_sequence = self.fusion_layers(stacked)
         
         # Extract the last position representation as the final fused embedding (representing the consensus of all attended modalities).
-        # Alternatively, we can average or take the CLS if present, but here taking the output sequence and averaging across the modality dimension 
-        # provides a robust global embedding without bias from a specific learnable token.
         B, N, D = fused_sequence.shape
-        avg_fused = torch.mean(fused_sequence, dim=1) # (B, D) - Global average pooling over modalities after deep attention refinement
+        avg_fused = torch.mean(fused_sequence, dim=1) # Global average pooling over modalities after deep MLP refinement
         
         return avg_fused
 
