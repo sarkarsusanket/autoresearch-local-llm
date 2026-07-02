@@ -1,0 +1,246 @@
+commit	f1	memory_gb	status	description
+auto	2026-07-01 21:39:36	0.608275	0.650493	0.000000	0.644036	0.530297	
+765bed0	0.608275	4.8	keep	baseline
+27e984c	0.000000	0.0	crash	To improve the model's ability to fuse heterogeneous geospatial modalities without relying on a fixe
+1b6db7c	0.000000	0.0	crash	# Model
+auto	2026-07-01 21:48:46	0.637890	0.659101	0.000000	0.690668	0.563900	
+81e4167	0.637890	5.4	keep	The previous crash occurred because the `MultiModalModel` was defined with a default argument (`emb_
+auto	2026-07-01 21:55:18	0.557081	0.566670	0.000000	0.630693	0.473878	
+b4b1b35	0.557081	6.7	discard	# Hyperparameters
+8babe5b	0.000000	0.0	crash	Based on the crash history where `BATCH_SIZE=512` caused an OOM and previous attempts to increase de
+auto	2026-07-01 22:02:51	0.361801	0.336070	0.000000	0.371293	0.378040	
+8c57b68	0.361801	8.5	discard	# Hyperparameters
+auto	2026-07-01 22:10:31	0.636432	0.656442	0.000000	0.689475	0.563379	
+71bfaff	0.636432	5.8	discard	# Cross-Attention Fusion Layer
+auto	2026-07-01 22:17:25	0.636753	0.657110	0.000000	0.688618	0.564532	
+589d7d6	0.636753	5.4	discard	Based on the current best F1 of 0.637890 and the constraint to use simpler code for similar or bette
+1ac6ace	0.000000	0.0	crash	To improve the model's ability to fuse heterogeneous geospatial modalities without relying on a fixe
+auto	2026-07-01 22:24:36	0.611484	0.620505	0.000000	0.665591	0.548355	
+23e1ece	0.611484	6.1	discard	# Hyperparameters
+auto	2026-07-01 22:31:13	0.601442	0.617564	0.000000	0.652153	0.534610	
+b9aeeb3	0.601442	4.2	discard	Based on the current best F1 of **0.637890** and a strict 5-minute budget with only 4 modalities (se
+auto	2026-07-01 22:37:56	0.639017	0.659951	0.000000	0.690360	0.566738	
+03f9e10	0.639017	5.9	keep	Proposed Modification: Increase the Transformer Encoder depth and feed-forward width to better model
+auto	2026-07-01 22:44:54	0.612109	0.625412	0.000000	0.677253	0.533663	
+f72b3a1	0.612109	5.9	discard	Based on the current best F1 of 0.639017 and a fixed time budget where we cannot train for longer to
+auto	2026-07-01 22:52:42	0.613290	0.627864	0.000000	0.671176	0.540830	
+9f102c0	0.613290	6.1	discard	class MultiModalModel(nn.Module):
+8d5867a	0.000000	0.0	crash	# Cross-Attention Fusion Layer
+auto	2026-07-01 23:00:15	0.361605	0.335701	0.000000	0.371284	0.377829	
+ba222a1	0.361605	5.6	discard	The crash log indicates a device mismatch in `LayerNorm` layers: weights are on CPU while input tens
+auto	2026-07-01 23:06:53	0.486127	0.501739	0.000000	0.537934	0.418708	
+b96c2fd	0.486127	4.6	discard	# Cross-Attention Fusion Layer
+auto	2026-07-01 23:13:30	0.451671	0.336442	0.000000	0.601964	0.416606	
+8f905c0	0.451671	7.5	discard	# Hyperparameters
+77e35b6	0.000000	0.0	crash	# Model
+4d74f9a	0.000000	0.0	crash	The crash indicates that `next(iter(batch.values()))` returns an iterator object in some PyTorch/Dat
+cd113e0	0.000000	0.0	crash	Based on the crash log and code analysis: The `create_mask` function defines a local variable named 
+9035082	0.000000	0.0	crash	Based on the analysis of geospatial embeddings and the current architecture: The model currently tre
+496338d	0.000000	0.0	crash	Based on the crash log showing a `SyntaxError` at line 159 where `return {name: ...}` appears outsid
+auto	2026-07-01 23:29:02	0.635542	0.658013	0.000000	0.689286	0.559326	
+2d18e5f	0.635542	5.9	discard	MASK_RATIO = 0.3
+auto	2026-07-01 23:36:13	0.606901	0.631516	0.000000	0.661909	0.527278	
+6ec32c2	0.606901	5.9	discard	# Hyperparameters
+44b6d96	0.000000	0.0	crash	Based on the analysis of geospatial modalities (images are high-variance/sparse signals while audio/
+auto	2026-07-01 23:45:02	0.674478	0.714826	0.000000	0.720564	0.588044	
+52c81c0	0.674478	5.9	keep	Based on the crash log `expected input[1, 256, 128] to have 128 channels`, it appears a previous (fa
+auto	2026-07-01 23:51:59	0.534569	0.541758	0.000000	0.588122	0.473827	
+dddc9f2	0.534569	7.4	discard	Based on the current best F1 of 0.674478 and a fixed time budget where training seconds are capped b
+auto	2026-07-01 23:58:48	0.678692	0.719795	0.000000	0.724202	0.592081	
+c0be1fd	0.678692	5.4	keep	self.fusion_layers = nn.TransformerEncoder(
+auto	2026-07-02 00:05:55	0.676624	0.715602	0.000000	0.722195	0.592076	
+ce9b39d	0.676624	5.4	discard	Looking at the current best F1 of 0.678692 and the history showing that increasing model capacity (C
+auto	2026-07-02 00:12:37	0.659325	0.694304	0.000000	0.706947	0.576723	
+c99208b	0.659325	4.1	discard	# Hyperparameters
+auto	2026-07-02 00:19:09	0.656053	0.693248	0.000000	0.703667	0.571245	
+7e05638	0.656053	5.4	discard	# Hyperparameters
+95190fa	0.000000	0.0	crash	Based on the current state of `train.py`, I will implement a **simple yet effective architectural si
+97f1783	0.000000	0.0	crash	Based on the crash log and history analysis:
+auto	2026-07-02 00:29:12	0.675426	0.714763	0.000000	0.721259	0.590255	
+14f28d9	0.675426	5.3	discard	Looking at the crash log and current architecture: The error `AttributeError: 'MultiModalModel' obje
+8abfe6f	0.000000	0.0	crash	The previous search failed likely due to minor whitespace differences or comment variations in `trai
+auto	2026-07-02 00:38:21	0.361672	0.335858	0.000000	0.371068	0.378091	
+a542def	0.361672	5.0	discard	Looking at the crash log `RuntimeError: ... expected input with shape [*, 768], but got input of siz
+auto	2026-07-02 00:44:46	0.663248	0.697999	0.000000	0.710995	0.580752	
+4f53c84	0.663248	4.1	discard	# Hyperparameters
+dd65878	0.000000	0.0	crash	Based on the history and constraints: The current best F1 is **0.678692**. Recent attempts to increa
+7a659db	0.000000	0.0	crash	The crash occurs because `nn.TransformerEncoder` expects a flat list of tokens or a specific input t
+auto	2026-07-02 00:53:46	0.676872	0.718079	0.000000	0.723656	0.588881	
+b543e46	0.676872	5.4	discard	# Extract the last position representation as the final fused embedding (representing the consensus 
+7fcb117	0.000000	0.0	crash	class MultiModalModel(nn.Module):
+auto	2026-07-02 01:01:45	0.678235	0.718765	0.000000	0.723535	0.592406	
+67ad422	0.678235	5.4	discard	Based on the crash log indicating `AttributeError: 'MultiModalModel' object has no attribute 'decode
+auto	2026-07-02 01:09:07	0.678104	0.716811	0.000000	0.724038	0.593463	
+ea71219	0.678104	5.5	discard	Looking at the history and current best F1 of **0.678692**, we are very close to a high score (often
+auto	2026-07-02 01:15:39	0.638832	0.670862	0.000000	0.690831	0.554804	
+e38c605	0.638832	4.1	discard	# Hyperparameters
+372d49c	0.000000	0.0	crash	Looking at the history, we are stuck just below 0.678692 with a Transformer-based fusion layer which
+b410496	0.000000	0.0	crash	# Cross-Attention Fusion Layer
+5481c63	0.000000	0.0	crash	# Cross-Attention Fusion Layer
+3ea1769	0.000000	0.0	crash	# Cross-Attention Fusion Layer
+auto	2026-07-02 01:28:13	0.678921	0.718976	0.000000	0.724228	0.593558	
+c210d3a	0.678921	5.4	keep	Looking at the crash log `AttributeError: 'MultiModalModel' object has no attribute 'fusion_layers'`
+auto	2026-07-02 01:36:01	0.678046	0.717342	0.000000	0.723431	0.593365	
+3a159ab	0.678046	5.4	discard	# Cross-Attention Fusion Layer: Replaced TransformerEncoder with MLPStack for better numerical stabi
+auto	2026-07-02 01:42:44	0.679016	0.719539	0.000000	0.724228	0.593282	
+725aec4	0.679016	5.4	keep	# Cross-Attention Fusion Layer: Replaced TransformerEncoder with MLPStack for better numerical stabi
+auto	2026-07-02 01:50:14	0.675091	0.712914	0.000000	0.721461	0.590898	
+728d20c	0.675091	5.4	discard	# Cross-Attention Fusion Layer: Replaced TransformerEncoder with MLPStack for better numerical stabi
+auto	2026-07-02 01:57:02	0.677173	0.716776	0.000000	0.723780	0.590962	
+7e3a88b	0.677173	5.5	discard	Looking at the history and current state:
+30b60c9	0.000000	0.0	crash	# Cross-Attention Fusion Layer: Replaced TransformerEncoder with MLPStack for better numerical stabi
+cf1e899	0.000000	0.0	crash	Based on the crash log `TypeError: cannot unpack non-iterable NoneType object` at line 243 during `d
+32b6ac5	0.000000	0.0	crash	# Cross-Attention Fusion Layer: Replaced TransformerEncoder with MLPStack for better numerical stabi
+auto	2026-07-02 02:08:31	0.675299	0.713302	0.000000	0.721265	0.591330	
+9dd92eb	0.675299	5.4	discard	Looking at the current best F1 of **0.679016**, we are very close to typical high-performing baselin
+auto	2026-07-02 02:16:25	0.591493	0.619839	0.000000	0.666419	0.488221	
+102c549	0.591493	5.1	discard	Based on the history provided, we have successfully reached an F1 score of **0.679016** (commit `725
+auto	2026-07-02 02:23:36	0.677873	0.716917	0.000000	0.723807	0.592895	
+56ff77a	0.677873	5.5	discard	The current best F1 score of **0.679016** was achieved with a TransformerEncoder depth of 3 layers a
+auto	2026-07-02 02:30:18	0.678587	0.719251	0.000000	0.723194	0.593316	
+88d306e	0.678587	5.3	discard	Looking at the experiment history and current state:
+auto	2026-07-02 02:36:55	0.677783	0.717706	0.000000	0.724263	0.591378	
+7ea996d	0.677783	5.4	discard	Looking at the current best F1 of 0.679016 and the history, we are stuck just below a potential high
+auto	2026-07-02 02:44:38	0.680563	0.720795	0.000000	0.726153	0.594740	
+7402704	0.680563	5.4	keep	Based on the experiment history and constraints:
+auto	2026-07-02 02:51:34	0.678508	0.718054	0.000000	0.723704	0.593765	
+64866b1	0.678508	5.8	discard	# Cross-Attention Fusion Layer: Replaced TransformerEncoder with MLPStack for better numerical stabi
+auto	2026-07-02 03:01:30	0.587919	0.616674	0.000000	0.644016	0.503067	
+6f89039	0.587919	4.1	discard	Based on the history, we are stuck at **0.680563**. The current architecture uses a `TransformerEnco
+auto	2026-07-02 03:09:12	0.680782	0.721320	0.000000	0.725695	0.595332	
+9c4d21c	0.680782	5.4	keep	Based on the history provided:
+auto	2026-07-02 03:15:57	0.683309	0.725725	0.000000	0.727009	0.597192	
+6c2ca8a	0.683309	5.4	keep	Looking at the current best F1 of **0.680782**, I will attempt to boost this by modifying the loss f
+auto	2026-07-02 03:23:37	0.682325	0.723771	0.000000	0.726473	0.596731	
+0b80f03	0.682325	5.4	discard	cos_sim_loss = 0.0
+auto	2026-07-02 03:30:46	0.682904	0.724522	0.000000	0.727091	0.597099	
+e255d8c	0.682904	5.3	discard	Looking at the current best F1 of **0.683309**, we are very close to breaking through 0.70. The hist
+59ab7b7	0.000000	0.0	crash	# Add Cosine Similarity Loss to encourage geometric consistency in embedding space
+auto	2026-07-02 03:38:20	0.676728	0.715514	0.000000	0.723678	0.590993	
+faa379b	0.676728	5.4	discard	Looking at the crash log and code analysis: The error `RuntimeError: output with shape [] doesn't ma
+dbd8339	0.000000	0.0	crash	Based on the current best F1 of **0.683309**, we are hitting a local optimum with standard Transform
+d535ba7	0.000000	0.0	crash	Based on the crash log `IndexError: too many indices for tensor of dimension 2` occurring at line 18
+a834135	0.000000	0.0	crash	Looking at the crash log `NameError: name 'emb_dim' is not defined` and the history where we reached
+auto	2026-07-02 03:48:02	0.678573	0.718075	0.000000	0.724144	0.593499	
+00483e8	0.678573	5.4	discard	To improve F1 by enhancing the model's ability to handle heterogeneous geospatial signals without in
+auto	2026-07-02 03:55:54	0.683082	0.725182	0.000000	0.727054	0.597011	
+24a892a	0.683082	5.4	discard	Looking at the current best F1 of **0.683309**, we are likely hitting a local optimum with standard 
+auto	2026-07-02 04:05:07	0.631592	0.662059	0.000000	0.683375	0.549342	
+6035198	0.631592	4.1	discard	self.fusion_layers = nn.TransformerEncoder(
+auto	2026-07-02 04:11:37	0.618415	0.655066	0.000000	0.675232	0.524946	
+66d0747	0.618415	3.7	discard	# Hyperparameters
+07f5e84	0.000000	0.0	crash	Looking at the experiment history and current state:
+auto	2026-07-02 04:18:54	0.683013	0.725247	0.000000	0.726829	0.596965	
+01fcfc4	0.683013	5.4	discard	# Model
+9b89765	0.000000	0.0	crash	Based on the history, we are stuck at **0.683309**. The current model uses a TransformerEncoder for 
+auto	2026-07-02 04:27:13	0.674985	0.713352	0.000000	0.721214	0.590389	
+64e3e63	0.674985	5.4	discard	The crash occurs because `compute_loss` expects scalar losses from the model's decoders to access th
+auto	2026-07-02 04:33:50	0.678352	0.717585	0.000000	0.724334	0.593135	
+fd3345a	0.678352	5.4	discard	# Using MSE which is standard and stable for this architecture; no need to sum if we want scalar los
+4addf46	0.000000	0.0	crash	# Cross-Attention Fusion Layer: Replaced TransformerEncoder with MLPStack for better numerical stabi
+auto	2026-07-02 04:42:19	0.683114	0.724683	0.000000	0.727313	0.597345	
+d81f7a4	0.683114	5.4	discard	The crash indicates that the `mask_ratio` attribute was referenced in code (`encode`) or hyperparame
+auto	2026-07-02 04:49:13	0.682256	0.723964	0.000000	0.726102	0.596703	
+f79e2c6	0.682256	5.4	discard	Looking at the experiment history and current state:
+auto	2026-07-02 04:55:53	0.667648	0.707686	0.000000	0.713405	0.581852	
+b27712c	0.667648	5.4	discard	# Hyperparameters
+auto	2026-07-02 05:04:37	0.673815	0.717880	0.000000	0.719426	0.584137	
+27d25b5	0.673815	5.4	discard	# Hyperparameters
+auto	2026-07-02 05:11:59	0.600705	0.615455	0.000000	0.655749	0.530912	
+410b114	0.600705	4.4	discard	Based on the experiment history, we are stuck at **F1 = 0.683309**. The current architecture uses a 
+9e554ae	0.000000	0.0	crash	Based on the experiment history and constraints, we are currently stuck at F1 = 0.683309 with a Tran
+auto	2026-07-02 05:19:49	0.682787	0.724526	0.000000	0.727095	0.596740	
+fd9b0d4	0.682787	5.4	discard	# Stack along modality dimension directly without prepending a learnable token.
+auto	2026-07-02 05:26:37	0.642461	0.672896	0.000000	0.691391	0.563095	
+d6c2f86	0.642461	4.1	discard	self.fusion_layers = nn.TransformerEncoder(
+auto	2026-07-02 05:33:54	0.681994	0.722752	0.000000	0.726876	0.596353	
+9bd8978	0.681994	5.4	discard	Based on the history, we are stuck at **0.683309**. The current model uses a `TransformerEncoder` wh
+52ee017	0.000000	0.0	crash	Looking at the experiment history and current state: We are stuck just below **0.683309**. The curre
+auto	2026-07-02 05:42:22	0.682645	0.724096	0.000000	0.727099	0.596740	
+2221202	0.682645	5.4	discard	The crash log indicates a dimension mismatch in the `TransformerEncoder` feed-forward network: `(102
+auto	2026-07-02 05:50:39	0.680605	0.721891	0.000000	0.724898	0.595025	
+aaeffc2	0.680605	5.3	discard	Looking at the experiment history, we are currently stuck at F1 = 0.683309 (commit `6c2ca8a`). The m
+auto	2026-07-02 05:57:25	0.679715	0.720767	0.000000	0.724541	0.593837	
+a2d4e57	0.679715	5.3	discard	Based on the experiment history and constraints:
+7475266	0.000000	0.0	crash	Based on the history analysis, we are stuck at **0.683309**. The current model uses a `TransformerEn
+efc8796	0.000000	0.0	crash	Based on the crash log `RuntimeError: Expected all tensors to be on the same device...`, the issue i
+auto	2026-07-02 06:13:40	0.679911	0.716827	0.000000	0.725771	0.597136	
+7687df4	0.679911	5.4	discard	self.encoders = nn.ModuleDict({
+6afe2f2	0.000000	0.0	crash	self.fusion_layers = nn.TransformerEncoder(
+42b6c23	0.000000	0.0	crash	# Cross-Attention Fusion Layer: Replaced TransformerEncoder with MLPStack for better numerical stabi
+auto	2026-07-02 06:25:34	0.683381	0.725009	0.000000	0.727544	0.597588	
+627285a	0.683381	5.4	keep	Based on the crash log `RuntimeError: Expected all tensors to be on the same device...`, the issue l
+auto	2026-07-02 06:32:16	0.682966	0.724827	0.000000	0.727194	0.596877	
+67b4a4c	0.682966	5.4	discard	MASK_RATIO = 0.5
+44ac248	0.000000	0.0	crash	Looking at the experiment history and current state:
+fa769da	0.000000	0.0	crash	# Cross-Attention Fusion Layer: Replaced TransformerEncoder with MLPStack for better numerical stabi
+03cfb12	0.000000	0.0	crash	# Cross-Attention Fusion Layer: Replaced TransformerEncoder with MLPStack for better numerical stabi
+auto	2026-07-02 06:42:03	0.682791	0.724974	0.000000	0.726807	0.596591	
+2f1021c	0.682791	5.5	discard	Based on the history analysis:
+6438157	0.000000	0.0	crash	Looking at the experiment history and current state: We are stuck just below **0.683381**. The curre
+auto	2026-07-02 06:49:12	0.683185	0.725431	0.000000	0.727403	0.596720	
+c35727f	0.683185	5.4	discard	The crash occurs because the `fused_sequence` tensor has only 2 dimensions `(B, D)` after global ave
+1e856f2	0.000000	0.0	crash	# Cross-Attention Fusion Layer: Replaced TransformerEncoder with MLPStack for better numerical stabi
+d83bea3	0.000000	0.0	crash	Based on the crash log `UnboundLocalError: local variable 'stacked' referenced before assignment`, t
+dd67b93	0.000000	0.0	crash	Based on the crash log (`NameError: name 'avg_pooling'`) and current code state where `avg_fused` wa
+auto	2026-07-02 06:58:55	0.683000	0.725269	0.000000	0.727051	0.596681	
+e80ab51	0.683000	5.4	discard	# Cross-Attention Fusion Layer: Replaced TransformerEncoder with MLPStack for better numerical stabi
+1b64502	0.000000	0.0	crash	# Cross-Attention Fusion Layer: Replaced TransformerEncoder with MLPStack for better numerical stabi
+auto	2026-07-02 07:08:41	0.682868	0.724207	0.000000	0.726790	0.597608	
+26f5684	0.682868	5.4	discard	# Cross-Attention Fusion Layer: Replaced TransformerEncoder with MLPStack for better numerical stabi
+4b56410	0.000000	0.0	crash	Based on the history, we are stuck just below **0.683381**. The current model uses a `TransformerEnc
+2d3378a	0.000000	0.0	crash	The crash log indicates a `NameError: name 'emb_dim' is not defined` inside the class definition of 
+auto	2026-07-02 07:16:35	0.630324	0.662639	0.000000	0.683128	0.545206	
+5a78739	0.630324	4.0	discard	The crash log indicates `AttributeError: 'MultiModalModel' object has no attribute 'fusion_layers'`.
+cad3cfe	0.000000	0.0	crash	Based on the experiment history, we are stuck at **F1 = 0.683381**. The current model uses a `Transf
+auto	2026-07-02 07:24:00	0.683405	0.725902	0.000000	0.727445	0.596868	
+fbef8ea	0.683405	5.4	keep	Based on the crash log (`NameError: name 'fused_sequence' is not defined` at line 246) and looking a
+auto	2026-07-02 07:30:37	0.683326	0.724092	0.000000	0.727692	0.598194	
+220795f	0.683326	5.4	discard	Based on the current state where we are stuck at F1=0.683405 and previous attempts to increase depth
+auto	2026-07-02 07:37:06	0.640060	0.679041	0.000000	0.691963	0.549175	
+98aba8e	0.640060	4.1	discard	# Hyperparameters
+fb25573	0.000000	0.0	crash	# Cross-Attention Fusion Layer: Replaced TransformerEncoder with MLPStack for better numerical stabi
+auto	2026-07-02 07:48:25	0.682811	0.724626	0.000000	0.727207	0.596599	
+3c96850	0.682811	5.4	discard	The crash log indicates a `NameError: name 'encoded'` at line 172 inside the `encode` method (specif
+0c1b6d5	0.000000	0.0	crash	Looking at the experiment history, we are currently stuck just below **F1 = 0.683405**. The current 
+e7231aa	0.000000	0.0	crash	The crash log indicates a tensor shape mismatch in the `MLPBlock`'s LayerNorm: it expects `[*, 1536]
+auto	2026-07-02 07:56:17	0.682703	0.723729	0.000000	0.727223	0.597157	
+c3e74c6	0.682703	5.4	discard	# Stack along modality dimension directly without prepending a learnable token.
+08237e1	0.000000	0.0	crash	Looking at the experiment history and current state: We are stuck just below **F1 = 0.683405**. The 
+2053fc9	0.000000	0.0	crash	The crash occurs because `encoded` was defined inside the loop in a previous attempt or logic error 
+c6b04d5	0.000000	0.0	crash	Based on the crash log `RuntimeError: ... expected input with shape [*, 768], but got input of size[
+auto	2026-07-02 08:08:59	0.680809	0.722326	0.000000	0.724848	0.595255	
+32955a5	0.680809	5.9	discard	Looking at the current best score of 0.683405 and the history of experiments, we are very close to b
+auto	2026-07-02 08:15:47	0.673649	0.718180	0.000000	0.719543	0.583225	
+37fea5b	0.673649	5.4	discard	Based on the experiment history, we are currently stuck at **F1 = 0.683405** (commit `fbef8ea`). The
+auto	2026-07-02 08:23:20	0.638271	0.670215	0.000000	0.690769	0.553829	
+d304a87	0.638271	4.1	discard	# Cross-Attention Fusion Layer: Replaced TransformerEncoder with MLPStack for better numerical stabi
+68f3476	0.000000	0.0	crash	Looking at the experiment history and current best F1 of **0.683405**, we are very close to breaking
+auto	2026-07-02 08:30:20	0.682611	0.724415	0.000000	0.726800	0.596619	
+cc7e5d7	0.682611	5.4	discard	The crash trace reveals a critical shape mismatch: `LayerNorm` expects the last dimension to match i
+f477a95	0.000000	0.0	crash	Looking at the experiment history, we are stuck just below **0.683405**. The current architecture us
+auto	2026-07-02 08:41:44	0.677121	0.717406	0.000000	0.723681	0.590275	
+621bc24	0.677121	5.4	discard	The crash indicates that the `MultiModalModel` class definition was likely truncated or corrupted by
+c29fd32	0.000000	0.0	crash	def forward(self, inputs):
+auto	2026-07-02 08:50:18	0.682413	0.723712	0.000000	0.727189	0.596339	
+163eae0	0.682413	5.4	discard	The crash log indicates a `NameError: name 'names' is not defined` inside the `create_mask` function
+auto	2026-07-02 08:57:09	0.682837	0.724990	0.000000	0.727044	0.596476	
+bd210cf	0.682837	5.4	discard	Looking at the current best F1 of **0.683405**, we are likely hitting a local optimum where standard
+auto	2026-07-02 09:03:50	0.608725	0.617647	0.000000	0.692680	0.515847	
+19dfc09	0.608725	5.4	discard	Based on the experiment history, we are stuck at **F1 = 0.683405**. The current model uses a `Transf
+48e74a7	0.000000	0.0	crash	Looking at the history, we are stuck just below **F1 = 0.683405**. The current architecture uses a `
+auto	2026-07-02 09:13:24	0.683487	0.725696	0.000000	0.727694	0.597070	
+f880b31	0.683487	5.4	keep	# Cross-Attention Fusion Layer: Replaced TransformerEncoder with MLPStack for better numerical stabi
+auto	2026-07-02 09:19:58	0.683135	0.724978	0.000000	0.727102	0.597324	
+71b1929	0.683135	5.4	discard	MASK_RATIO = 0.5
+d0afefe	0.000000	0.0	crash	Looking at the current best F1 of **0.683487**, we are likely hitting a local optimum with standard 
+6b5605b	0.000000	0.0	crash	The crash log indicates a `NameError: name 'self' is not defined` at line 152 where `nn.Conv1d(self.
+d3ca505	0.000000	0.0	crash	Based on the crash log and experiment history, we are stuck at F1 = 0.683487 with a TransformerEncod
+auto	2026-07-02 09:31:14	0.642749	0.678258	0.000000	0.693297	0.556691	
+7e7a563	0.642749	5.4	discard	# Hyperparameters
+283be25	0.000000	0.0	crash	Looking at the experiment history, we are currently stuck at **F1 = 0.683487**. The model uses a `Tr
+auto	2026-07-02 09:39:28	0.683309	0.725104	0.000000	0.727454	0.597369	
+a11e8ef	0.683309	5.4	discard	The crash log indicates a `NameError: name 'dropout' is not defined` at line 150 inside the `MLPBloc
+6d4ba56	0.000000	0.0	crash	self.fusion_layers = nn.TransformerEncoder(
+auto	2026-07-02 09:48:49	0.578328	0.588052	0.000000	0.623846	0.523085	
+7043e52	0.578328	4.9	discard	self.fusion_layers = nn.TransformerEncoder(
