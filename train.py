@@ -163,11 +163,18 @@ class MultiModalModel(nn.Module):
     # Cross-Attention Fusion Layer: Replaced TransformerEncoder with MLPStack for better numerical stability on Windows/CUDA without Triton/Compile overhead. 
     # This effectively performs dense cross-modal fusion via pre-norm layers which are robust and fast.
     
+        # Cross-Attention Fusion Layer: Replaced TransformerEncoder with MLPStack for better numerical stability on Windows/CUDA without Triton/Compile overhead. 
+    # This effectively performs dense cross-modal fusion via pre-norm layers which are robust and fast.
+    
     def encode(self, inputs):
         encoded = {}
+        B = next(iter(inputs.values())).shape[0]  # Batch size from first available modality
+        
+        # Project all modalities to a common dimension D before stacking/fusing 
         for name in self.modality_names:
             if name in inputs and inputs[name] is not None:
                 encoded[name] = self.encoders[name](inputs[name])
+            
             else:
                 # Handle missing modalities with zeros
                 encoded[name] = torch.zeros_like(inputs.get(name, torch.empty(0)))
