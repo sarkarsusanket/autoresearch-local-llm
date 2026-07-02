@@ -175,9 +175,8 @@ class MultiModalModel(nn.Module):
         # Stack along modality dimension directly without prepending a learnable token. 
         stacked = torch.stack(list(encoded.values()), dim=1)
         
-        if len(stacked.shape) > 2:
-            # Apply MLP fusion using the static self.fusion_layers defined in __init__
-            fused_sequence = self.fusion_layers(stacked)
+        # Apply fusion layers to the stacked sequence (B, N_modalities, D).
+        fused_sequence = self.fusion_layers(stacked)
         
         # Extract the last position representation as the final fused embedding (representing the consensus of all attended modalities).
         B, N, D = fused_sequence.shape
